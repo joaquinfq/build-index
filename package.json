@@ -1,0 +1,18 @@
+{
+    "name"         : "build-index",
+    "version"      : "0.1.0",
+    "description"  : "Build index of EcmaScript package.",
+    "author"       : "Joaquín Fernández",
+    "license"      : "MIT",
+    "homepage"     : "http://www.joaquinfernandez.net",
+    "repository"   : {
+        "type" : "git",
+        "url"  : "https://github.com/joaquinfq/format-decimal"
+    },
+    "dependencies" : {
+        "dot-prop"       : "^4.1.1",
+        "handlebars"     : "^4.0.6",
+        "jf-file-system" : "^0.1.3",
+        "node-getopt"    : "^0.2.3"
+    }
+}

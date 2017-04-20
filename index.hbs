@@ -1,0 +1,25 @@
+{{{header}}}
+{{#each imports}}
+import {{name}} from './{{file}}';
+{{/each}}
+/**
+{{#if description}}
+ * {{{description}}}
+{{else}}
+ * Archivo índice creado con `build-index`.
+{{/if}}
+ *
+{{#if author}}
+ * @author    {{author}}
+{{/if}}
+{{#if name}}
+ * @namespace {{name}}
+ * @module    {{name}}
+{{/if}}
+ * @created   {{created}}
+{{#if version}}
+ * @version   {{version}}
+{{/if}}
+ */
+module.exports = {{{content}}}
+{{{footer}}}
