@@ -54,7 +54,7 @@ import TypeItemUser from './type/item/user.mjs';
  * @created Fri Apr 21 2017 00:25:03 GMT+0200 (CEST)
  * @version 0.1
  */
-module.exports = {
+export default {
     'Base' : Base,
     'type' : {
         'Base' : TypeBase,
