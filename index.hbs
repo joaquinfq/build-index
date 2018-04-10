@@ -1,6 +1,6 @@
 {{{header}}}
 {{#each imports}}
-import {{name}} from './{{file}}';
+import {{name}}{{spaces}} from './{{file}}';
 {{/each}}
 /**
 {{#if description}}
@@ -13,7 +13,6 @@ import {{name}} from './{{file}}';
  * @author    {{author}}
 {{/if}}
 {{#if name}}
- * @namespace {{name}}
  * @module    {{name}}
 {{/if}}
  * @created   {{created}}

@@ -1,6 +1,8 @@
-const dotProp      = require('dot-prop');
+const handlebars   = require('handlebars');
 const jfFileSystem = require('jf-file-system');
 const path         = require('path');
+const propSep      = require('prop-sep');
+const sep2cc       = require('sep2cc');
 /**
  * Genera el archivo índice de un paquete hecho en ECMAScript.
  * El índice luego puede ser exportado usando webpack o algún
@@ -88,7 +90,7 @@ class jfBuildIndex extends jfFileSystem
          *
          * @type {RegExp}
          */
-        this.testFile = /^(.+)\.(m?js|es\d)$/i;
+        this.testFile = /\.(m?js|es\d?)$/i;
         /**
          * Ruta de la plantilla a usar para renderizar el archivo.
          *
@@ -105,7 +107,7 @@ class jfBuildIndex extends jfFileSystem
         this.loadOptions();
         this.loadFiles();
         const _outfile = `${this.indir}index.${this.extension}`;
-        const _content = require('handlebars')
+        const _content = handlebars
             .compile(this.loadTpl())(
                 Object.assign(
                     {
@@ -117,21 +119,6 @@ class jfBuildIndex extends jfFileSystem
             .trim();
         // console.log('%s\n%s\n%s\n', _outfile, '-'.repeat(_outfile.length), _content);
         this.write(_outfile, _content + '\n');
-    }
-
-    /**
-     * Convierte una lista de palabras a formato `camelCase`.
-     *
-     * @param {String} text Texto a convertir.
-     *
-     * @return {String} Texto convertido.
-     */
-    camelize(text)
-    {
-        return text.replace(
-            /[^a-zA-Z]+(.?)/g,
-            (match, letter) => letter.toUpperCase()
-        );
     }
 
     /**
@@ -147,6 +134,22 @@ class jfBuildIndex extends jfFileSystem
     }
 
     /**
+     * Busca el archivo `package.json` a partir del directorio de entrada.
+     */
+    findPackage()
+    {
+        if (this.package === '')
+        {
+            const _name = 'package.json';
+            const _path = this.findUp(this.indir, _name);
+            if (path.parse(_path).root !== _path)
+            {
+                this.package = path.join(_path, _name);
+            }
+        }
+    }
+
+    /**
      * Formatea el objeto que tiene las clases.
      *
      * @return {String} Objeto formateado e indentado.
@@ -154,7 +157,6 @@ class jfBuildIndex extends jfFileSystem
     formatClasses()
     {
         return JSON.stringify(this.classes, null, 4)
-                   .replace(/^(\s+)"(\w+)"/gm, "$1'$2'")
                    .replace(/"/g, '')
                    .replace(/:/g, ' :') + ';'
     }
@@ -166,6 +168,8 @@ class jfBuildIndex extends jfFileSystem
     {
         const _classes = this.classes;
         const _imports = this.imports;
+        let   _length  = [];
+        const _module  = sep2cc('-' + this.name);
         let _dir       = this.indir;
         if (_dir.substr(-1) !== path.sep)
         {
@@ -173,28 +177,38 @@ class jfBuildIndex extends jfFileSystem
             this.indir = _dir;
         }
         this.log('log', '', 'Buscando archivos en el directorio: %s', _dir);
-        const _files = this.scandir(_dir, this.testFile);
+        const _files = this.scandir(_dir).filter(f => this.testFile.test(f));
         this.log('log', '', 'Archivos encontrados: %d', _files.length);
-        _files
-            .sort((file1, file2) => file1.toLowerCase().localeCompare(file2.toLowerCase()))
-            .forEach(
-                file =>
-                {
-                    const _path = this.parse(file);
-                    if (_path)
+        if (_files.length)
+        {
+            _files
+                .sort((file1, file2) => file1.toLowerCase().localeCompare(file2.toLowerCase()))
+                .forEach(
+                    file =>
                     {
-                        const _name = this.capitalize(this.camelize(_path));
-                        dotProp.set(_classes, _path, _name);
-                        _imports.push(
-                            {
-                                name : _name,
-                                file : path.relative(_dir, file)
-                            }
-                        );
+                        const _path = this.parse(file);
+                        if (_path)
+                        {
+                            const _name = _module + _path.split('.').map(this.capitalize).join('');
+                            propSep.set(_classes, _path, _name);
+                            _length.push(_name.length);
+                            _imports.push(
+                                {
+                                    name : _name,
+                                    file : path.relative(_dir, file)
+                                }
+                            );
+                        }
                     }
-                }
-            );
-        this.log('log', '', 'Archivos a importar: %d', _imports.length);
+                );
+            _length = Math.max(..._length);
+            _imports.forEach(i => i.spaces = ' '.repeat(_length - i.name.length));
+            this.log('log', '', 'Archivos a importar: %d', _imports.length);
+        }
+        else
+        {
+            this.log('log', '', 'No se encontraron archivos a importar.');
+        }
     }
 
     /**
@@ -223,9 +237,10 @@ class jfBuildIndex extends jfFileSystem
         {
             this.log('log', '', 'Aplicando las opciones de la línea de comandos');
             Object.assign(this, _options);
-            if (_options.package)
+            this.findPackage();
+            if (this.package)
             {
-                Object.assign(this, require(_options.package));
+                Object.assign(this, require(this.package));
             }
         }
         else
@@ -254,25 +269,26 @@ class jfBuildIndex extends jfFileSystem
      */
     parse(filename)
     {
-        let _name = path.basename(filename).match(this.testFile);
-        if (_name && _name[1] !== 'index')
+        let _name = path.basename(filename, path.extname(filename));
+        if (_name === 'index')
         {
-            let _isClass = this.read(filename).match(/\*\s*@class /);
-            filename     = path.relative(this.indir, filename)
+            filename = '';
+        }
+        else
+        {
+            const _isClass = this.read(filename).match(/(^|\*\s*@)class /);
+            filename       = path.relative(this.indir, filename)
                 .split(path.sep)
                 .map(
                     (p, i, a) => i === a.length - 1
                         ? _isClass
-                                     ? this.capitalize(this.camelize(_name[1]))
-                                     : _name[1]
-                        : this.camelize(p)
+                            ? this.capitalize(sep2cc(_name))
+                            : _name
+                        : sep2cc(p)
                 )
                 .join('.');
         }
-        else
-        {
-            filename = '';
-        }
+
         return filename;
     }
 }
@@ -282,7 +298,8 @@ module.exports = jfBuildIndex;
 // Si no estamos ejecutando directamente este archivo, omitimos el proceso.
 // Esto permite que una clase hija pueda modificar el comportamiento.
 //--------------------------------------------------------------------------------
-if (process.argv[1] === __filename)
+if (require.main === module)
 {
+    process.argv.push('-i', '/tmp/rsi-cli/demo-models/src');
     new jfBuildIndex().build();
 }
