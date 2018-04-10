@@ -300,6 +300,6 @@ module.exports = jfBuildIndex;
 //--------------------------------------------------------------------------------
 if (require.main === module)
 {
-    process.argv.push('-i', '/tmp/rsi-cli/demo-models/src');
+    process.argv.push();
     new jfBuildIndex().build();
 }
