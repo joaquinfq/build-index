@@ -1,6 +1,6 @@
 {
     "name": "build-index",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "description": "Build index of EcmaScript package.",
     "author": "Joaquín Fernández",
     "license": "MIT",
@@ -10,6 +10,7 @@
         "url": "https://github.com/joaquinfq/build-index"
     },
     "dependencies": {
+        "cc2sep": "^1.0.2",
         "handlebars": "^4.0.6",
         "jf-file-system": "^2.0.3",
         "node-getopt": "^0.2.3",

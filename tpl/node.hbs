@@ -1,0 +1,7 @@
+{{{header}}}
+{{#each imports}}
+const {{name}}{{spaces}} = require('./{{file}}');
+{{/each}}
+{{> header}}
+module.exports = {{{content}}}
+{{{footer}}}

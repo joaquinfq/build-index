@@ -38,15 +38,16 @@ Directory tree:
         └── user.mjs
 ```
 
+### EcmaScript
 Index generated:
 
 ```js
-import Base from './base.mjs';
-import TypeBase from './type/base.mjs';
-import TypeCollectionBase from './type/collection/base.mjs';
+import Base                from './base.mjs';
+import TypeBase            from './type/base.mjs';
+import TypeCollectionBase  from './type/collection/base.mjs';
 import TypeCollectionUsers from './type/collection/users.mjs';
-import TypeItemBase from './type/item/base.mjs';
-import TypeItemUser from './type/item/user.mjs';
+import TypeItemBase        from './type/item/base.mjs';
+import TypeItemUser        from './type/item/user.mjs';
 /**
  * Archivo índice creado con `build-index`.
  *
@@ -55,16 +56,50 @@ import TypeItemUser from './type/item/user.mjs';
  * @version 0.1
  */
 export default {
-    'Base' : Base,
-    'type' : {
-        'Base' : TypeBase,
-        'collection' : {
-            'Base' : TypeCollectionBase,
-            'Users' : TypeCollectionUsers
+    Base : Base,
+    type : {
+        Base : TypeBase,
+        collection : {
+            Base : TypeCollectionBase,
+            Users : TypeCollectionUsers
         },
-        'item' : {
-            'Base' : TypeItemBase,
-            'User' : TypeItemUser
+        item : {
+            Base : TypeItemBase,
+            User : TypeItemUser
+        }
+    }
+};
+```
+
+### NodeJS
+
+Index generated:
+
+```js
+const Base                = require('./base.mjs');
+const TypeBase            = require('./type/base.mjs');
+const TypeCollectionBase  = require('./type/collection/base.mjs');
+const TypeCollectionUsers = require('./type/collection/users.mjs');
+const TypeItemBase        = require('./type/item/base.mjs');
+const TypeItemUser        = require('./type/item/user.mjs');
+/**
+ * Archivo índice creado con `build-index`.
+ *
+ * @author  Joaquín Fernández
+ * @created Fri Apr 21 2017 00:25:03 GMT+0200 (CEST)
+ * @version 0.1
+ */
+module.exports = {
+    Base : Base,
+    type : {
+        Base : TypeBase,
+        collection : {
+            Base : TypeCollectionBase,
+            Users : TypeCollectionUsers
+        },
+        item : {
+            Base : TypeItemBase,
+            User : TypeItemUser
         }
     }
 };

@@ -1,3 +1,4 @@
+const cc2sep       = require('cc2sep').trimmed;
 const handlebars   = require('handlebars');
 const jfFileSystem = require('jf-file-system');
 const path         = require('path');
@@ -40,7 +41,7 @@ class jfBuildIndex extends jfFileSystem
          *
          * @type {String}
          */
-        this.description = 'Archivo índice creado con `build-index`.';
+        this.description = '';
         /**
          * Extensión del índice a generar.
          *
@@ -96,7 +97,7 @@ class jfBuildIndex extends jfFileSystem
          *
          * @type {String}
          */
-        this.tpl = path.join(__dirname, 'index.hbs');
+        this.tpl = '';
     }
 
     /**
@@ -119,6 +120,23 @@ class jfBuildIndex extends jfFileSystem
             .trim();
         // console.log('%s\n%s\n%s\n', _outfile, '-'.repeat(_outfile.length), _content);
         this.write(_outfile, _content + '\n');
+    }
+
+    /**
+     * Convierte una lista de palabras a formato `camelCase`.
+     *
+     * @param {String}  text       Texto a convertir.
+     * @param {Boolean} capitalize Si es 'true' se convierte en mayúscula la primera letra.
+     *
+     * @return {String} Texto convertido.
+     */
+    camelize(text, capitalize = true)
+    {
+        text = sep2cc(cc2sep(text).replace(/[\s#$~;:.'"=^_\-\\/(){}[\]+*]+/g, '-'));
+
+        return capitalize
+            ? this.capitalize(text)
+            : text;
     }
 
     /**
@@ -169,7 +187,7 @@ class jfBuildIndex extends jfFileSystem
         const _classes = this.classes;
         const _imports = this.imports;
         let   _length  = [];
-        const _module  = sep2cc('-' + this.name);
+        const _module  = this.camelize(this.name);
         let _dir       = this.indir;
         if (_dir.substr(-1) !== path.sep)
         {
@@ -242,6 +260,22 @@ class jfBuildIndex extends jfFileSystem
             {
                 Object.assign(this, require(this.package));
             }
+            if (!this.tpl)
+            {
+                handlebars.registerPartial(
+                    'header',
+                    this.read(path.join(__dirname, 'tpl', 'partials', 'header.hbs'))
+                );
+                switch (this.extension)
+                {
+                    case 'js':
+                        this.tpl = path.join(__dirname, 'tpl', 'node.hbs');
+                        break;
+                    case 'mjs':
+                        this.tpl = path.join(__dirname, 'tpl', 'es6.hbs');
+                        break;
+                }
+            }
         }
         else
         {
@@ -276,15 +310,13 @@ class jfBuildIndex extends jfFileSystem
         }
         else
         {
-            const _isClass = this.read(filename).match(/(^|\*\s*@)class /);
+            const _isClass = this.read(filename).match(/(^|\*\s*@)class /) !== null;
             filename       = path.relative(this.indir, filename)
                 .split(path.sep)
                 .map(
                     (p, i, a) => i === a.length - 1
-                        ? _isClass
-                            ? this.capitalize(sep2cc(_name))
-                            : _name
-                        : sep2cc(p)
+                        ? this.camelize(_name, _isClass)
+                        : this.camelize(p, false)
                 )
                 .join('.');
         }
