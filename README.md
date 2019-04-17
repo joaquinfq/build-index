@@ -1,4 +1,4 @@
-# build-index [![stable](http://badges.github.io/stability-badges/dist/stable.svg)](http://github.com/badges/stability-badges)
+# @jf/index [![stable](http://badges.github.io/stability-badges/dist/stable.svg)](http://github.com/badges/stability-badges)
 
 Build index of EcmaScript package.
 Index file can be used as `entry` key of webpack configuration.
@@ -10,16 +10,16 @@ Index file can be used as `entry` key of webpack configuration.
 
 ## Usage
 
-[![npm install build-index](https://nodei.co/npm/build-index.png?compact=true)](https://npmjs.org/package/build-index/)
+[![npm install @jf/index](https://nodei.co/npm/@jf/index.png?compact=true)](https://npmjs.org/package/@jf/index/)
 
 ```bash
-node build-index -i /path/to/srcdir
+node jf-index -i /path/to/srcdir
 ```
 
 Some info can be retrieved from `package.json`:
 
 ```bash
-node build-index -i /path/to/srcdir -p /path/to/package.json
+node jf-index -i /path/to/srcdir -p /path/to/package.json
 ```
 
 ## Example
@@ -49,7 +49,7 @@ import TypeCollectionUsers from './type/collection/users.mjs';
 import TypeItemBase        from './type/item/base.mjs';
 import TypeItemUser        from './type/item/user.mjs';
 /**
- * Archivo índice creado con `build-index`.
+ * Archivo índice creado con `@jf/index`.
  *
  * @author  Joaquín Fernández
  * @created Fri Apr 21 2017 00:25:03 GMT+0200 (CEST)
@@ -83,7 +83,7 @@ const TypeCollectionUsers = require('./type/collection/users.mjs');
 const TypeItemBase        = require('./type/item/base.mjs');
 const TypeItemUser        = require('./type/item/user.mjs');
 /**
- * Archivo índice creado con `build-index`.
+ * Archivo índice creado con `@jf/index`.
  *
  * @author  Joaquín Fernández
  * @created Fri Apr 21 2017 00:25:03 GMT+0200 (CEST)

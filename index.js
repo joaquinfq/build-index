@@ -1,25 +1,25 @@
-const cc2sep       = require('cc2sep').trimmed;
-const handlebars   = require('handlebars');
-const jfFileSystem = require('jf-file-system');
+#!/usr/bin/env node
+
+const cc2sep       = require('@jf/cc2sep');
+const jfFileSystem = require('@jf/fs');
+const Mustache     = require('mustache');
 const path         = require('path');
-const propSep      = require('prop-sep');
-const sep2cc       = require('sep2cc');
+const propSep      = require('@jf/prop-sep');
+const sep2cc       = require('@jf/sep2cc');
+
 /**
- * Genera el archivo índice de un paquete hecho en ECMAScript.
+ * Genera el archivo índice de un paquete hecho usando módulos ECMAScript o CommonJS.
  * El índice luego puede ser exportado usando webpack o algún
  * otro empaquetador.
  *
- * @author    Joaquín Fernández
  * @namespace jf
- * @class     jf.BuildIndex
+ * @class     jf.Index
  * @extends   jf.FileSystem
  */
-class jfBuildIndex extends jfFileSystem
+class jfIndex extends jfFileSystem
 {
     /**
-     * Constructor de la clase.
-     *
-     * @constructor
+     * @override
      */
     constructor()
     {
@@ -27,75 +27,94 @@ class jfBuildIndex extends jfFileSystem
         /**
          * Objeto donde se agregarán las clases encontrados.
          *
-         * @type {Object}
+         * @property classes
+         * @type     {object}
          */
         this.classes = {};
         /**
          * Fecha de creación del índice.
          *
-         * @type {Date}
+         * @property created
+         * @type     {string}
          */
-        this.created = new Date();
+        this.created = new Date().toISOString();
         /**
          * Descripción a colocar en el archivo generado.
          *
-         * @type {String}
+         * @property descrìption
+         * @type     {string}
          */
         this.description = '';
         /**
          * Extensión del índice a generar.
          *
-         * @type {String}
+         * @property extension
+         * @type     {string}
          */
-        this.extension = 'mjs';
+        this.extension = 'js';
         /**
          * Texto a colocar como pie de página del documento.
          *
-         * @type {String}
+         * @property footer
+         * @type     {string}
          */
         this.footer = '';
         /**
          * Texto a colocar como cabecera del documento.
          *
-         * @type {String}
+         * @property header
+         * @type     {string}
          */
         this.header = '';
         /**
          * Objeto donde se agregarán los archivos encontrados para importarlos.
          *
-         * @type {Object[]}
+         * @property imports
+         * @type     {object[]}
          */
         this.imports = [];
         /**
          * Directorio con el código fuente.
          *
-         * @type {String}
+         * @property indif
+         * @type     {string}
          */
         this.indir = '';
         /**
          * Nombre del módulo.
          *
-         * @type {String}
+         * @property name
+         * @type     {string}
          */
         this.name = '';
         /**
          * Ruta al archivo `package.json`.
          * Las claves de este archivo se fusionarán con los valores de la instancia.
          *
-         * @type {String}
+         * @property package
+         * @type     {string}
          */
         this.package = '';
+        /**
+         * Indica si se escribe en disco o se muestra por pantalla el resultado.
+         *
+         * @property save
+         * @type     {boolean}
+         */
+        this.save = false;
         /**
          * Expresión regular para verificar si el archivo encontrado debe ser
          * incluido en el índice.
          *
-         * @type {RegExp}
+         * @property testFile
+         * @type     {RegExp}
          */
         this.testFile = /\.(m?js|es\d?)$/i;
         /**
          * Ruta de la plantilla a usar para renderizar el archivo.
          *
-         * @type {String}
+         * @property tpl
+         * @type     {string}
          */
         this.tpl = '';
     }
@@ -108,43 +127,49 @@ class jfBuildIndex extends jfFileSystem
         this.loadOptions();
         this.loadFiles();
         const _outfile = `${this.indir}index.${this.extension}`;
-        const _content = handlebars
-            .compile(this.loadTpl())(
+        const _content = Mustache
+            .render(
+                this.loadTpl(),
                 Object.assign(
                     {
                         content : this.formatClasses()
                     },
                     this
-                )
+                ),
+                {
+                    header : this.read(path.join(__dirname, 'tpl', 'partials', 'header.hbs'))
+                }
             )
             .trim();
-        // console.log('%s\n%s\n%s\n', _outfile, '-'.repeat(_outfile.length), _content);
-        this.write(_outfile, _content + '\n');
+        if (this.write)
+        {
+            this.write(_outfile, _content + '\n');
+        }
+        else
+        {
+            console.log('%s\n%s\n%s\n', _outfile, '-'.repeat(_outfile.length), _content);
+        }
     }
 
     /**
      * Convierte una lista de palabras a formato `camelCase`.
      *
-     * @param {String}  text       Texto a convertir.
-     * @param {Boolean} capitalize Si es 'true' se convierte en mayúscula la primera letra.
+     * @param {string}  text       Texto a convertir.
+     * @param {boolean} capitalize Si es 'true' se convierte en mayúscula la primera letra.
      *
-     * @return {String} Texto convertido.
+     * @return {string} Texto convertido.
      */
     camelize(text, capitalize = true)
     {
-        text = sep2cc(cc2sep(text).replace(/[\s#$~;:.'"=^_\-\\/(){}[\]+*]+/g, '-'));
-
-        return capitalize
-            ? this.capitalize(text)
-            : text;
+        return sep2cc(cc2sep(text).replace(/[\W_]+/g, '-'), '-', capitalize);
     }
 
     /**
      * Convierte la primera letra de un texto a mayúsculas.
      *
-     * @param {String} text Texto a convertir.
+     * @param {string} text Texto a convertir.
      *
-     * @return {String} Texto convertido.
+     * @return {string} Texto convertido.
      */
     capitalize(text)
     {
@@ -170,13 +195,13 @@ class jfBuildIndex extends jfFileSystem
     /**
      * Formatea el objeto que tiene las clases.
      *
-     * @return {String} Objeto formateado e indentado.
+     * @return {string} Objeto formateado e indentado.
      */
     formatClasses()
     {
         return JSON.stringify(this.classes, null, 4)
                    .replace(/"/g, '')
-                   .replace(/:/g, ' :') + ';'
+                   .replace(/:/g, ' :') + ';';
     }
 
     /**
@@ -186,7 +211,7 @@ class jfBuildIndex extends jfFileSystem
     {
         const _classes = this.classes;
         const _imports = this.imports;
-        let   _length  = [];
+        let _length    = [];
         const _module  = this.camelize(this.name);
         let _dir       = this.indir;
         if (_dir.substr(-1) !== path.sep)
@@ -245,6 +270,7 @@ class jfBuildIndex extends jfFileSystem
                     ['i', 'indir=ARG',       'Directorio con el código fuente (obligatorio).'          ],
                     ['n', 'name=ARG',        'Nombre del módulo.'                                      ],
                     ['p', 'package=ARG',     'Ruta al archivo `package.json`.'                         ],
+                    ['s', 'save',            'Escribe el archivo en vez de mostrar por consola.'       ],
                     ['t', 'tpl=ARG',         'Ruta de la plantilla a usar para renderizar el archivo.' ]
                     //@formatter:on
                 ]
@@ -262,10 +288,6 @@ class jfBuildIndex extends jfFileSystem
             }
             if (!this.tpl)
             {
-                handlebars.registerPartial(
-                    'header',
-                    this.read(path.join(__dirname, 'tpl', 'partials', 'header.hbs'))
-                );
                 switch (this.extension)
                 {
                     case 'js':
@@ -287,7 +309,7 @@ class jfBuildIndex extends jfFileSystem
     /**
      * Carga la plantilla y devuelve su contenido.
      *
-     * @return {String} Contenido de la plantilla.
+     * @return {string} Contenido de la plantilla.
      */
     loadTpl()
     {
@@ -297,9 +319,9 @@ class jfBuildIndex extends jfFileSystem
     /**
      * Analiza la ruta del archivo y la convierte a una ruta separada por `.`.
      *
-     * @param {String} filename Ruta del archivo.
+     * @param {string} filename Ruta del archivo.
      *
-     * @return {String} Ruta usando `.` o una cadena vacía si el archivo no debe ser agregado al índice.
+     * @return {string} Ruta usando `.` o una cadena vacía si el archivo no debe ser agregado al índice.
      */
     parse(filename)
     {
@@ -320,11 +342,11 @@ class jfBuildIndex extends jfFileSystem
                 )
                 .join('.');
         }
-
         return filename;
     }
 }
-module.exports = jfBuildIndex;
+
+module.exports = jfIndex;
 //--------------------------------------------------------------------------------
 // Inicio del script
 // Si no estamos ejecutando directamente este archivo, omitimos el proceso.
@@ -333,5 +355,5 @@ module.exports = jfBuildIndex;
 if (require.main === module)
 {
     process.argv.push();
-    new jfBuildIndex().build();
+    jfIndex.i().build();
 }

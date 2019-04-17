@@ -1,18 +1,19 @@
 /**
-{{#if description}}
+{{#description}}
  * {{{description}}}
-{{else}}
+{{/description}}
+{{^description}}
  * Archivo índice creado con `build-index`.
-{{/if}}
+{{/description}}
  *
-{{#if author}}
+{{#author}}
  * @author  {{author}}
-{{/if}}
-{{#if name}}
+{{/author}}
+{{#name}}
  * @module  {{name}}
-{{/if}}
+{{/name}}
  * @created {{created}}
-{{#if version}}
+{{#version}}
  * @version {{version}}
-{{/if}}
+{{/version}}
  */
